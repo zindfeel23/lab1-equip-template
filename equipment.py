@@ -1,17 +1,10 @@
-"""Экипировка. Здесь ты пишешь новую систему.
-
-Классы Item и Player трогать не надо: их держит остальной сервер, и менять
-поля нельзя. Твоя работа — три функции внизу.
-"""
+"""Экипировка. Новая система, без дюпа."""
 
 SLOTS = ("head", "body", "right_hand", "left_hand", "ring_1", "ring_2")
-# Не отдельное хранилище: просто два ключа из SLOTS, чтобы не писать их руками.
 HANDS = ("right_hand", "left_hand")
 
 
 class Item:
-    """Вещь. Класс достался от старой системы."""
-
     def __init__(self, name, slot, power=0, durability=100, level_req=1,
                  two_handed=False):
         self.name = name
@@ -22,7 +15,6 @@ class Item:
         self.two_handed = two_handed
 
     def __bool__(self):
-        # Валера: «удобно же — if item: значит вещь целая»
         return self.durability > 0
 
     def __repr__(self):
@@ -41,16 +33,94 @@ class Player:
         return f"<{self.name} lvl={self.level} inv={len(self.inventory)}>"
 
 
+def other_hand(hand):
+    if hand == "right_hand":
+        return "left_hand"
+    return "right_hand"
+
+
+def hand_item(player, hand):
+    # что реально лежит в руке. двуручное лежит в своей руке, но занимает
+    # обе, поэтому если рука пустая, смотрим соседнюю
+    item = player.slots[hand]
+    if item is not None:
+        return item
+    other = player.slots[other_hand(hand)]
+    if other is not None and other.two_handed:
+        return other
+    return None
+
+
 def equip(player, item):
-    """Надеть вещь из инвентаря. True — надели, False — не смогли."""
-    raise NotImplementedError
+    if item.slot not in SLOTS:
+        return False
+    if player.level < item.level_req:
+        return False
+    if item.two_handed and item.slot not in HANDS:
+        return False
+    if item not in player.inventory:
+        return False
+
+    # вещи, которые вернутся из слотов обратно в инвентарь
+    back = []
+    if item.two_handed:
+        for h in HANDS:
+            if player.slots[h] is not None:
+                back.append(player.slots[h])
+    elif item.slot in HANDS:
+        cur = hand_item(player, item.slot)
+        if cur is not None:
+            back.append(cur)
+    else:
+        if player.slots[item.slot] is not None:
+            back.append(player.slots[item.slot])
+
+    # item уйдет из инвентаря, back вернется. если места нет, отказ
+    if len(player.inventory) - 1 + len(back) > player.capacity:
+        return False
+
+    player.inventory.remove(item)
+
+    # освобождаем слоты
+    if item.two_handed:
+        for h in HANDS:
+            if player.slots[h] is not None:
+                player.inventory.append(player.slots[h])
+            player.slots[h] = None
+    elif item.slot in HANDS:
+        cur = hand_item(player, item.slot)
+        if cur is not None:
+            if cur.two_handed:
+                player.slots["right_hand"] = None
+                player.slots["left_hand"] = None
+            else:
+                player.slots[item.slot] = None
+            player.inventory.append(cur)
+    else:
+        if player.slots[item.slot] is not None:
+            player.inventory.append(player.slots[item.slot])
+            player.slots[item.slot] = None
+
+    player.slots[item.slot] = item
+    return True
 
 
 def unequip(player, slot):
-    """Снять вещь из слота в инвентарь. True — сняли, False — слот пуст."""
-    raise NotImplementedError
+    item = player.slots[slot]
+    if item is None:
+        return False
+    if item.two_handed:
+        player.slots["right_hand"] = None
+        player.slots["left_hand"] = None
+    else:
+        player.slots[slot] = None
+    player.inventory.append(item)
+    return True
 
 
 def total_power(player):
-    """Сила всех надетых вещей. Сломанная вещь даёт 0."""
-    raise NotImplementedError
+    total = 0
+    for item in player.slots.values():
+        if item is not None and item.durability > 0:
+            total += item.power
+    return total
