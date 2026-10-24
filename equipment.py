@@ -1,5 +1,3 @@
-"""Экипировка. Новая система, без дюпа."""
-
 SLOTS = ("head", "body", "right_hand", "left_hand", "ring_1", "ring_2")
 HANDS = ("right_hand", "left_hand")
 
@@ -40,8 +38,6 @@ def other_hand(hand):
 
 
 def hand_item(player, hand):
-    # что реально лежит в руке. двуручное лежит в своей руке, но занимает
-    # обе, поэтому если рука пустая, смотрим соседнюю
     item = player.slots[hand]
     if item is not None:
         return item
@@ -61,7 +57,6 @@ def equip(player, item):
     if item not in player.inventory:
         return False
 
-    # вещи, которые вернутся из слотов обратно в инвентарь
     back = []
     if item.two_handed:
         for h in HANDS:
@@ -75,13 +70,11 @@ def equip(player, item):
         if player.slots[item.slot] is not None:
             back.append(player.slots[item.slot])
 
-    # item уйдет из инвентаря, back вернется. если места нет, отказ
     if len(player.inventory) - 1 + len(back) > player.capacity:
         return False
 
     player.inventory.remove(item)
 
-    # освобождаем слоты
     if item.two_handed:
         for h in HANDS:
             if player.slots[h] is not None:

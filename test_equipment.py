@@ -3,7 +3,6 @@ import valera_equip
 
 
 def count_items(player):
-    # сколько всего вещей у игрока: в инвентаре + в слотах
     ids = set()
     for item in player.inventory:
         ids.add(id(item))
@@ -16,8 +15,6 @@ def count_items(player):
 def make_player(**kwargs):
     return equipment.Player("тест", **kwargs)
 
-
-# базовые вещи
 
 def test_equip_moves_item():
     p = make_player()
@@ -75,8 +72,6 @@ def test_equip_not_in_inventory():
     assert p.slots["right_hand"] is None
 
 
-# двуручное
-
 def test_two_handed_power_once():
     p = make_player()
     two = equipment.Item("двуручник", "right_hand", power=50, two_handed=True)
@@ -127,8 +122,6 @@ def test_one_handed_into_two_handed():
     assert p.slots["right_hand"] is None
 
 
-# сломанная вещь
-
 def test_broken_item_false_in_bool():
     broken = equipment.Item("сломанный", "right_hand", power=10, durability=0)
     assert bool(broken) is False
@@ -167,8 +160,6 @@ def test_broken_item_not_lost():
     assert broken in p.inventory
 
 
-# некуда вернуть
-
 def test_full_inventory_refuse():
     p = make_player(capacity=3)
     two = equipment.Item("двуручник", "right_hand", power=50, two_handed=True)
@@ -205,8 +196,6 @@ def test_two_handed_with_room():
     assert p.slots["right_hand"] is two
 
 
-# инвариант: вещи не создаются и не теряются
-
 def test_conservation_invariant():
     p = make_player()
     sword = equipment.Item("меч", "right_hand", power=10)
@@ -218,13 +207,11 @@ def test_conservation_invariant():
     p.inventory.extend([sword, axe, two, dagger, shield, high])
     start = count_items(p)
 
-    # слот занят
     equipment.equip(p, sword)
     assert count_items(p) == start
     equipment.equip(p, axe)
     assert count_items(p) == start
 
-    # двуручное освобождает обе руки
     equipment.equip(p, dagger)
     equipment.equip(p, shield)
     assert count_items(p) == start
@@ -233,7 +220,6 @@ def test_conservation_invariant():
     equipment.unequip(p, "right_hand")
     assert count_items(p) == start
 
-    # операция не прошла
     stranger = equipment.Item("чужой", "right_hand")
     assert equipment.equip(p, stranger) is False
     assert count_items(p) == start
@@ -242,8 +228,6 @@ def test_conservation_invariant():
     assert equipment.equip(p, high) is False
     assert count_items(p) == start
 
-
-# дюп валеры
 
 def test_valera_dup():
     p = valera_equip.Player("тест")
